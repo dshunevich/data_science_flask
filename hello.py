@@ -116,7 +116,7 @@ import os
 from flask import Flask, flash, request, redirect, url_for
 from werkzeug.utils import secure_filename
 
-UPLOAD_FOLDER = '/files/'
+UPLOAD_FOLDER = './files/'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -132,6 +132,7 @@ def allowed_file(filename):
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
+    print('request method ='+str(request.method))
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:

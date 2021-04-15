@@ -2,6 +2,8 @@ from joblib import dump, load
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 from sklearn import datasets
+
+
 iris_X, iris_y = datasets.load_iris(return_X_y=True)
 
 # Split iris data in train and test data

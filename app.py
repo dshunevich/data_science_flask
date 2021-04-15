@@ -1,26 +1,31 @@
 import joblib
 import os
 import numpy as np
-from flask import Flask, request, jsonify, abort, redirect, url_for, render_template, send_file 
-from werkzeug.utils import secure_filename
 import pandas as pd
+import os
+from flask import Flask, flash, request, jsonify, abort, redirect, url_for, render_template, send_file 
+from werkzeug.utils import secure_filename
+from flask_wtf import FlaskForm
+from wtforms import StringField, FileField
+from wtforms.validators import DataRequired
+
 
 app = Flask(__name__)
 
+
 knn = joblib.load('knn.joblib')
 
+def mean(numbers):
+    return float(sum(numbers)) / max(len(numbers), 1)
+
 @app.route('/')
-def hello_world():
-    #print('hi!')
-    return 'Hello, my very best friend!!!!'
+def index():
+    return render_template('index.html')
 
 @app.route('/user/<username>')
 def show_user_profile(username):
     username = float(username) * float(username)
     return 'User %s' % username
-
-def mean(numbers):
-    return float(sum(numbers)) / max(len(numbers), 1)
 
 @app.route('/avg/<nums>')
 def avg(nums):
@@ -40,14 +45,11 @@ def iris(param):
         dict = {1: 'setosa', 2: 'versicolor', 3: 'virginica'}
     except:
         return redirect(url_for('bad_request'))
-    
     return f'<img src="/static/{dict[predict[0]]}.jpg" alt="{dict[predict[0]]}">'
-
 
 @app.route('/badrequest400')
 def bad_request():
     return abort(400)
-
 
 @app.route('/iris_post', methods=['POST'])
 def add_message():
@@ -60,21 +62,13 @@ def add_message():
         predict = {'class': str(predict[0])}
     except:
         return redirect(url_for('bad_request'))
-
     return jsonify(predict)
-
-
-
-from flask_wtf import FlaskForm
-from wtforms import StringField, FileField
-from wtforms.validators import DataRequired
 
 
 app.config.update(dict(
     SECRET_KEY="powerful secretkey",
     WTF_CSRF_SECRET_KEY="a csrf secret key"
 ))
-
 
 class MyForm(FlaskForm):
     name = StringField('name', validators=[DataRequired()])
@@ -112,9 +106,7 @@ def submit():
 
 
 
-import os
-from flask import Flask, flash, request, redirect, url_for
-from werkzeug.utils import secure_filename
+
 
 UPLOAD_FOLDER = './files/'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}

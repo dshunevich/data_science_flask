@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Servises:</h1>
+    {% for servise in services %}
+    <div><p>{{ servise.name }} : <b>{{ servise.link }}</b></p></div>
+    {% endfor %}
+{% endblock %}

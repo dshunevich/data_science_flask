@@ -6,38 +6,82 @@ import os
 from flask import Flask, flash, request, jsonify, abort, redirect, url_for, render_template, send_file 
 from werkzeug.utils import secure_filename
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileRequired
 from wtforms import StringField, FileField
-from wtforms.validators import DataRequired
-
+from wtforms.validators import DataRequired, InputRequired
 
 app = Flask(__name__)
-
-
+UPLOAD_FOLDER = './files/'
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 knn = joblib.load('knn.joblib')
 
+# functions 
 def mean(numbers):
     return float(sum(numbers)) / max(len(numbers), 1)
 
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    services = [
+        {
+            'service': {'name': 'iris task', 'link': 'iris_tasks'}
+        },
+        {
+            'service': {'name': 'iris dataset', 'link': 'iris'}
+        },
+        {
+            'service': {'name': 'avg', 'link': 'avg'}
+        }, 
+        {
+            'service': {'name': 'user', 'link': 'user'}
+        },
+        {
+            'service': {'name': 'Prediction of the type of iris flower from the csv file data', 'link': 'iris_submit'}
+        },
+        {
+            'service': {'name': 'Prediction of the type of iris flower from the csv file data API', 'link': 'iris_upload'}
+        }]
+    return render_template('index.html', services=services)
 
-@app.route('/user/<username>')
-def show_user_profile(username):
-    username = float(username) * float(username)
-    return 'User %s' % username
 
-@app.route('/avg/<nums>')
-def avg(nums):
-    nums = nums.split(',')
-    nums = [float(num) for num in nums]
-    nums_mean = mean(nums)
-    print(nums_mean)
-    return str(nums_mean)
+@app.route('/iris_tasks')
+def iris_tasks():
+    form = IrisInputForm()
+    services = [
+        {
+            'service': {'name': 'iris prediction for params', 
+                        'link': 'iris',
+                        'form': form}
+        },
+        {
+            'service': {'name': 'download iris dataset (csv format)', 'link': 'iris_submit'}
+        }]
+    
+    return render_template('services.html', services=services)
+
+class CheckIrisParams(object):
+    def __init__(self, params=[], message=None):
+        self.params = params
+        if not message:
+            message = 'Field must be four characters separated by a commas'
+        self.message = message
+
+    def __call__(self, form, field):
+        params_list = split(self.params)
+        print(str(params))
+        print(str(params_list))
+        #    raise ValidationError(self.message)
+
+check_iris_params = CheckIrisParams
+
+class IrisInputForm(FlaskForm):
+    name = StringField('Name', [InputRequired(), check_iris_params()])
 
 @app.route('/iris/<param>')
 def iris(param):
     try:
+        form = IrisInputForm()
         param = param.split(',')
         param = [float(num) for num in param]
         param = np.array(param).reshape(1,-1)
@@ -45,14 +89,12 @@ def iris(param):
         dict = {1: 'setosa', 2: 'versicolor', 3: 'virginica'}
     except:
         return redirect(url_for('bad_request'))
-    return f'<img src="/static/{dict[predict[0]]}.jpg" alt="{dict[predict[0]]}">'
+    image = f'<img height=100 width=100 src="/static/{dict[predict[0]]}.jpg" alt="{dict[predict[0]]}">'
+    return render_template('services.html', form_input=form, image=image)
 
-@app.route('/badrequest400')
-def bad_request():
-    return abort(400)
 
 @app.route('/iris_post', methods=['POST'])
-def add_message():
+def post():
     content = request.get_json()
     try:
         param = content['flower'].split(',')
@@ -70,29 +112,28 @@ app.config.update(dict(
     WTF_CSRF_SECRET_KEY="a csrf secret key"
 ))
 
-class MyForm(FlaskForm):
-    name = StringField('name', validators=[DataRequired()])
-    file = FileField()
+class IrisSubmitForm(FlaskForm):
+    #name = StringField('name', validators=[DataRequired()])
+    file = FileField(validators=[FileRequired()])
 
-@app.route('/submit', methods=('GET', 'POST'))
-def submit():
-    form = MyForm()
+@app.route('/iris_submit', methods=('GET', 'POST'))
+def iris_submit():
+    form = IrisSubmitForm()
     if form.validate_on_submit():
-
         f = form.file.data
-        filename = form.name.data + '.csv' 
-        
+        filename = 'iris_predict_file.csv'
+        #filename = form.name.data + '.csv' 
+
         #filename = secure_filename(f.filename)
         #f.save(os.path.join(
         #    'files/', filename
         #))
 
-
         df = pd.read_csv(f, header=None)
-        print(df.head())
+        #print(df.head())
 
         predict = knn.predict(df)
-        print(predict)
+        #print(predict)
 
         result = pd.DataFrame(predict)
         result.to_csv(filename, index=False)
@@ -102,27 +143,13 @@ def submit():
                      attachment_filename=filename,
                      as_attachment=True)
 
-    return render_template('submit.html', form=form)
-
-
-
-
-
-UPLOAD_FOLDER = './files/'
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-
-
-
-
+    return render_template('services.html', form=form)
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/upload', methods=['GET', 'POST'])
+@app.route('/iris_upload', methods=['GET', 'POST'])
 def upload_file():
     print('request method ='+str(request.method))
     if request.method == 'POST':
@@ -152,3 +179,7 @@ def upload_file():
       <input type=submit value=Upload>
     </form>
     '''
+
+@app.route('/badrequest400')
+def bad_request():
+    return abort(400)

@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Servises:</h1>
-    {% for servise in services %}
-    <div><p>{{ servise.name }} : <b>{{ servise.link }}</b></p></div>
+    <h2>Servises:</h2>
+    {% for service in services %}
+
+        <div><p><a href={{ service.service.link }}>{{ service.service.name }}</a></p></div>
+
     {% endfor %}
 {% endblock %}

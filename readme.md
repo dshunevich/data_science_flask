@@ -9,6 +9,11 @@
 | 2,1,4,0 |
 -----------
 
+First Header  | Second Header
+------------- | -------------
+Content Cell  | Content Cell
+Content Cell  | Content Cell
+
 После нажатия на кнопку "Go", скачается файл формата csv с предсказаниями классов цветков (исходя из параметров):
 
 ---
